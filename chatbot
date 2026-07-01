@@ -1,0 +1,137 @@
+#usr/bin/env python3
+"""Chatbot học tập lớp 10 đơn giản bằng Python."""
+
+import random
+import re
+
+KNOWLEDGE = {
+    "toan": [
+        "Toán 10 thường có các chủ đề: hàm số, phương trình bậc hai, bất phương trình, hình học Oxyz và lượng giác.",
+        "Muốn giải phương trình bậc hai, hãy đưa về dạng ax^2 + bx + c = 0 và dùng công thức nghiệm: x = (-b ± sqrt(b^2-4ac)) / (2a).",
+        "Với hệ số đối xứng, nhớ thử đặt x + 1/x = t khi a = c.",
+    ],
+    "ly": [
+        "Lý 10 bao gồm động học chất điểm, cơ học vật rắn, dao động điều hòa và sóng cơ.",
+        "Công thức động học thẳng biến đổi đều: v = v0 + at, s = v0 t + 1/2 a t^2.",
+        "Điện tích, dòng điện và điện trở: I = Q/t, U = IR.",
+    ],
+    "hoa": [
+        "Hóa 10 có kiến thức cơ bản về nguyên tử, bảng tuần hoàn, liên kết hóa học và phản ứng axit-bazo.",
+        "Cách cân bằng phương trình hóa học: cân bằng số nguyên tử mỗi nguyên tố ở hai vế.",
+        "Phân biệt axit: HCl, H2SO4, HNO3; bazo: NaOH, KOH, Ca(OH)2.",
+    ],
+    "sinh": [
+        "Sinh học 10 gồm tế bào, cơ chế di truyền, sinh trưởng phân bào và hệ cơ quan thực vật.",
+        "Tế bào là đơn vị cơ bản của sự sống, gồm màng tế bào, nhân, tế bào chất và bào quan.",
+        "Quá trình photpho hóa và hô hấp tế bào là hai quá trình quan trọng trong trao đổi chất.",
+    ],
+    "van": [
+        "Văn học 10 gồm các tác phẩm tiêu biểu như 'Lão Hạc', 'Tây Tiến', 'Chiếc thuyền ngoài xa', và các bài thơ trữ tình.",
+        "Khi làm văn nghị luận, cần có luận điểm, luận cứ, dẫn chứng và kết luận rõ ràng.",
+        "Đọc kỹ đề bài để xác định dạng bài: nghị luận văn học, nghị luận xã hội hay phân tích tác phẩm.",
+    ]
+    "anh": [
+        "Tiếng Anh 10 thường học thì hiện tại đơn, hiện tại tiếp diễn, quá khứ đơn và tương lai đơn.",
+        "Cấu trúc hiện tại đơn: S + V(s/es) cho chủ ngữ số ít, và với động từ thường không thêm s cho I/You/We/They.",
+        "Cách phát âm: chú ý âm cuối của động từ thêm -ed khi chia quá khứ (t/k/p -> /t/, d/g -> /d/, còn lại /ɪd/).",
+    ],
+    "su": [
+        "Lịch sử 10 có các giai đoạn lịch sử Việt Nam cuối thế kỷ XIX và đầu thế kỷ XX, phong trào Duy Tân, Đông Du.",
+        "Nắm rõ các sự kiện chính: Cải cách Duy Tân, phong trào Đông Du, khởi nghĩa Yên Thế.",
+        "Khi làm bài Lịch sử, ghi rõ thời gian, nhân vật, nguyên nhân, diễn biến và kết quả.",
+    ],
+    "dia": [
+        "Địa lý 10 gồm các nội dung về tự nhiên và kinh tế các châu lục, khí hậu, khoáng sản và dân cư Việt Nam.",
+        "Chú ý phân biệt khí hậu nhiệt đới ẩm gió mùa, khí hậu ôn đới và khí hậu cận nhiệt đới.",
+        "Hệ thống sông ngòi Việt Nam: Sông Hồng, sông Mê Kông, sông Cửu Long, sông Đồng Nai.",
+    ],
+}
+
+SUBJECT_KEYWORDS = {
+    "toan": ["toán", "hàm số", "phương trình", "bất phương trình", "lượng giác", "hình học"],
+    "ly": ["lý", "vật lý", "động học", "cơ học", "sóng", "dao động", "điện"],
+    "hoa": ["hóa", "hóa học", "phản ứng", "axit", "bazo", "nguyên tử"],
+    "sinh": ["sinh", "sinh học", "tế bào", "di truyền", "phân tử"],
+    "van": ["văn", "văn học", "nghị luận", "tác phẩm", "thơ", "truyện"],
+    "anh": ["anh", "tiếng anh", "english", "tenses", "động từ"],
+    "su": ["sử", "lịch sử", "cách mạng", "phong trào", "triều đại"],
+    "dia": ["địa", "địa lý", "khí hậu", "sông", "khoáng sản", "dân cư"],
+}
+
+GENERAL_TIPS = (
+    "Mình là chatbot hỗ trợ học tập lớp 10. Bạn có thể hỏi về Toán, Lý, Hóa, Sinh, Văn, Anh, Sử hoặc Địa.\n"
+    "Hỏi cụ thể hơn nếu bạn muốn ví dụ bài tập, lý thuyết, hay mẹo làm bài."
+)
+
+
+def normalize(text: str) -> str:
+    return re.sub(r"[^a-z0-9áàạảãâấầậẩẫăắằặẳẵéèẹẻẽêếềệểễíìịỉĩóòọỏõôốồộổỗơớờợởỡúùụủũưứừựửữýỳỵỷỹđ]+", " ", text.lower())
+
+
+def detect_subject(question: str) -> str | None:
+    normalized = normalize(question)
+    for subject, keywords in SUBJECT_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in normalized:
+                return subject
+    return None
+
+
+def choose_answer(subject: str) -> str:
+    answers = KNOWLEDGE.get(subject)
+    if not answers:
+        return random.choice([
+            "Môn này mình chưa có nhiều nội dung lắm, bạn thử hỏi chi tiết hơn nhé.",
+            "Mình chưa rõ môn đó lắm, bạn nói rõ hơn một chút được không?",
+        ])
+
+    fact = random.choice(answers)
+    replies = [
+        f"Được, mình chia sẻ chút nhé: {fact}",
+        f"À, về phần đó thì {fact.lower()}",
+        f"Mình thấy nội dung này hay: {fact}",
+        f"Bạn nên biết rằng {fact.lower()}",
+    ]
+    return random.choice(replies)
+
+
+def answer_question(question: str) -> str:
+    subject = detect_subject(question)
+    if subject:
+        return choose_answer(subject)
+
+    normalized = normalize(question)
+    if any(word in normalized for word in ["help", "gợi ý", "cách", "giúp", "hướng dẫn"]):
+        return GENERAL_TIPS
+
+    return (
+        "Mình chưa rõ câu hỏi. Bạn thử hỏi lại với từ khóa như 'Toán', 'Vật lý', 'Hóa', 'Văn', 'Tiếng Anh', 'Lịch sử' hoặc 'Địa lý' nhé."
+    )
+
+
+def main() -> None:
+    print("=== Chatbot Học Tập Lớp 10 ===")
+    print("Chào bạn! Mình có thể trợ giúp các môn Toán, Lý, Hóa, Sinh, Văn, Anh, Sử, Địa.")
+    print("Gõ 'thoát' hoặc 'exit' để kết thúc.")
+
+    while True:
+        try:
+            question = input("Bạn: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nTạm biệt! Chúc bạn học tốt.")
+            break
+
+        if not question:
+            continue
+
+        if question.lower() in {"thoát", "exit", "bye", "tạm biệt"}:
+            print("Chatbot: Tạm biệt! Chúc bạn học tốt và ôn tập hiệu quả.")
+            break
+
+        answer = answer_question(question)
+        print(f"Chatbot: {answer}\n")
+
+
+if __name__ == "__main__":
+    main()!/
+
